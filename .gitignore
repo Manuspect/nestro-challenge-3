@@ -16,3 +16,9 @@ testrun/*
 .~lock*
 *.pkl
 Пример_заполнения_Основных_котировок_Platts_Argus.xlsx
+quarterly_exchange_rate.xlsx
+.gitignore
+monthly_exchange_rate.xlsx
+parse_log.log
+Приложение_1.xlsx
+цены_нефти.xlsx

@@ -9,6 +9,8 @@ dependencies:
   - python=3.10.12                # https://pyreadiness.org/3.10
   - pip=23.2.1                    # https://pip.pypa.io/en/stable/news
   - truststore=0.7.0              # https://github.com/sethmlarson/truststore/blob/main/CHANGELOG.md
+  - pandas=2.1.1
+  - numpy=1.26.0
   - pip:
     - rpaframework==27.1.0        # https://rpaframework.org/releasenotes.html
     - robocorp==1.0.0             # https://pypi.org/project/robocorp
