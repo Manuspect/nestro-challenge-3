@@ -180,3 +180,56 @@ def parse_chrome():
     finally:
         # Закрываем браузер после использования
         browser.close_browser()
+
+@task
+def pars_exel():
+    # Загрузите данные из monthly_exchange_rate.xlsx
+    monthly_data = pd.read_excel('monthly_exchange_rate.xlsx')
+
+    # Загрузите данные из Приложение_1.xlsx
+    app1_data = pd.read_excel('Приложение_1.xlsx')
+
+    # Задайте столбцы, с которыми нужно сопоставить данные
+    columns_to_match = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь",
+                        "Ноябрь", "Декабрь"]
+
+    # Обновите данные в Приложение_1.xlsx
+    for column in columns_to_match:
+        app1_data[column] = monthly_data[column]
+
+    # Сохраните обновленные данные в Приложение_1.xlsx
+    app1_data.to_excel('Приложение_1.xlsx', index=False)
+
+    # Загрузите данные из цены_нефти.xlsx
+    oil_price_data = pd.read_excel('цены_нефти.xlsx')
+
+    # Загрузите данные из Приложение_1.xlsx
+    app1_data = pd.read_excel('Приложение_1.xlsx')
+
+    # Задайте столбцы, с которыми нужно сопоставить данные
+    columns_to_match = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь",
+                        "Ноябрь", "Декабрь"]
+
+    # Обновите данные в Приложение_1.xlsx
+    for column in columns_to_match:
+        app1_data[column] = oil_price_data[column]
+
+    # Сохраните обновленные данные в Приложение_1.xlsx
+    app1_data.to_excel('Приложение_1.xlsx', index=False)
+
+    # Загрузите данные из quarterly_exchange_rate.xlsx
+    quarterly_data = pd.read_excel('quarterly_exchange_rate.xlsx')
+
+    # Загрузите данные из Приложение_1.xlsx
+    app1_data = pd.read_excel('Приложение_1.xlsx')
+
+    # Задайте столбцы кварталов, с которыми нужно сопоставить данные
+    quarters_to_match = ["1 кв", "2 кв", "3 кв", "4 кв"]
+
+    # Обновите данные в Приложение_1.xlsx
+    for quarter in quarters_to_match:
+        app1_data[quarter] = quarterly_data["Средний курс"]
+
+    # Сохраните обновленные данные в Приложение_1.xlsx
+    app1_data.to_excel('Приложение_1.xlsx', index=False)
+
