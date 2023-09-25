@@ -17,15 +17,15 @@ output_directory = os.environ.get("ROBOT_ARTIFACTS")
 shared_directory = os.path.join(output_directory, "shared")
 
 
+logging.basicConfig(filename='parse_log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
+                    encoding='utf-8')
+
+
 @task
 def usd_kurs():
     # Определите даты начала и конца
     start_date = "01.01.2022"
     end_date = "31.12.2022"
-
-    logging.basicConfig(filename='parse_log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
-                        encoding='utf-8')
-
     try:
         # Инициализируем Selenium
         browser = Selenium()
@@ -209,21 +209,30 @@ def add_urals():
 @task
 def pars_exel():
     # Загрузите данные из monthly_exchange_rate.xlsx
-    monthly_data = pd.read_excel('monthly_exchange_rate.xlsx')
+    monthly_data = pd.read_excel('monthly_exchange_rate.xlsx').T
+
+    months = {'январь': 1, 'февраль': 2, 'март': 3, 'апрель': 4, 'май': 5,
+              'июнь': 6, 'июль': 7, 'август': 8, 'сентябрь': 9, 'октябрь': 10,
+              'ноябрь': 11, 'декабрь': 12}
+
+    logging.info(monthly_data)
 
     # Загрузите данные из Приложение_1.xlsx
-    app1_data = pd.read_excel('Приложение_1.xlsx')
-
-    # Задайте столбцы, с которыми нужно сопоставить данные
-    columns_to_match = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь",
-                        "Ноябрь", "Декабрь"]
-
-    # Обновите данные в Приложение_1.xlsx
-    for column in columns_to_match:
-        app1_data[column] = monthly_data[column]
-
-    # Сохраните обновленные данные в Приложение_1.xlsx
-    app1_data.to_excel('Приложение_1.xlsx', index=False)
+    app1_data = pd.read_excel('Приложение 1.xlsx', header=[0, 1])
+    excel = Excel()
+    excel.open_workbook('Приложение 1.xlsx')
+    excel.set_active_worksheet('Анализ_БК+ББ')
+    counter = 4
+    shipment_date = excel.get_cell_value(counter, 'L')
+    while excel.get_cell_value(counter, 'L') is not None:
+        shipment_date = excel.get_cell_value(counter, 'L')
+        reciving_date = excel.get_cell_value(counter, 'O')
+        excel.set_cell_value(counter, "Y", monthly_data[months[shipment_date.lower(
+        ).replace(" ", "")]].loc['Средний курс'])
+        excel.set_cell_value(counter, "Z", monthly_data[months[reciving_date.lower(
+        ).replace(" ", "")]].loc['Средний курс'])
+        counter += 1
+    excel.save_workbook('./result.xlsx')
 
     # Загрузите данные из цены_нефти.xlsx
     oil_price_data = pd.read_excel('цены_нефти.xlsx')
@@ -234,8 +243,7 @@ def pars_exel():
     # Задайте столбцы, с которыми нужно сопоставить данные
     columns_to_match = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь",
                         "Ноябрь", "Декабрь"]
-
-    # Обновите данные в Приложение_1.xlsx
+# Обновите данные в Приложение_1.xlsx
     for column in columns_to_match:
         app1_data[column] = oil_price_data[column]
 
@@ -257,3 +265,41 @@ def pars_exel():
 
     # Сохраните обновленные данные в Приложение_1.xlsx
     app1_data.to_excel('Приложение_1.xlsx', index=False)
+
+
+@task
+def load_new_external_data_to_excel():
+    app1_data = pd.read_excel('Приложение_1.xlsx', sheet_name='Анализ_БК+ББ')
+    # company_head = app1_data[]
+    logging.info(app1_data.info())
+    logging.info(app1_data.head())
+
+    # Компании по которым мы анализизируем клиентов
+    companys_names = ['Компания 1', 'Company ABC',
+                      'A-Нефтегаз', 'Компания ААА', 'Компания АВА']
+
+    logging.info(app1_data.columns)
+    companys_clients = app1_data['Покупатель']
+    sub_columns = app1_data.iloc[0]
+
+    companys_index = companys_clients.index[companys_clients.isin(
+        companys_names)]
+
+    clients = []
+    for i in range(len(companys_names)):
+        client = companys_clients[companys_index[i]: companys_index[i+1]]
+        logging.info([companys_index[i], companys_index[i+1]])
+        logging.info(client)
+        clients.append(client)
+
+    # Добавление новых клиентов в шаблон
+    app2_data = pd.read_excel('компания 1 заказчик.xlsx')
+    logging.info(app2_data.head())
+    new_clients = app2_data['Клиент']
+    logging.info(app2_data.columns)
+
+    # TODO: append new_clients to template
+
+
+# @task
+# def load_input_to_excel():

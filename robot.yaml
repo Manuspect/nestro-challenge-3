@@ -3,8 +3,10 @@
 
 tasks:
   Parser:
-    # shell: python -m robocorp.tasks run tasks.py -t usd_kurs
     shell: python -m robocorp.tasks run tasks.py
+
+  excel_parser:
+    shell: python -m robocorp.tasks run tasks.py -t load_input_to_excel
 
 environmentConfigs:
   - environment_windows_amd64_freeze.yaml
