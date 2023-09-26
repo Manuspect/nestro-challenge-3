@@ -1,6 +1,7 @@
 import openpyxl
 import requests
 from bs4 import BeautifulSoup as bs
+import logging
 
 
 def leap(year):
@@ -16,7 +17,8 @@ def create_html_list(year):
     months = ['dekabrya', 'noyabrya', 'oktyabrya', 'sentyabrya', 'avgusta', 'iyulya', 'iyunya', 'maya', 'aprelya',
               'marta', 'fevralya', 'yanvarya']
     months = list(reversed(months))
-    last_days = ['31', '28', '31', '30', '31', '30', '31', '31', '30', '31', '30', '31']
+    last_days = ['31', '28', '31', '30', '31',
+                 '30', '31', '31', '30', '31', '30', '31']
     if leap(year):
         last_days[1] = '29'
     for i in range(len(months)):
@@ -50,15 +52,16 @@ def get_duty(url):
     return duty
 
 
-html_list = create_html_list(2022)
-duties = list([])
-for url in html_list:
-    duties.append(get_duty(url))
+def test():
+    logging.info('customs_duties_parser')
+    html_list = create_html_list(2022)
+    duties = list([])
+    for url in html_list:
+        duties.append(get_duty(url))
 
-wb = openpyxl.load_workbook('Приложение 1.xlsx')
-sheet = wb['Company ABC_факт_НДПИ (Platts)']
-for i in range(len(duties)):
-    sheet[f"{chr(67 + i)}{7}"].value = duties[i]
-wb.save("Приложение 1.xlsx")
-wb.close()
-
+    wb = openpyxl.load_workbook('./first_table/Приложение 1.xlsx')
+    sheet = wb['Company ABC_факт_НДПИ (Platts)']
+    for i in range(len(duties)):
+        sheet[f"{chr(67 + i)}{7}"].value = duties[i]
+    wb.save("./first_table/Приложение 1.xlsx")
+    wb.close()

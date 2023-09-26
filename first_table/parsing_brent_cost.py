@@ -4,6 +4,7 @@ import pandas as pd
 import openpyxl
 import numpy as np
 import datetime
+import logging
 
 
 def generate_strings(letter, num_1, num_2):
@@ -14,7 +15,7 @@ def generate_strings(letter, num_1, num_2):
 
 
 def fill_xlsx(cell, letter):
-    wb = openpyxl.load_workbook('Приложение 1.xlsx')
+    wb = openpyxl.load_workbook('./first_table/Приложение 1.xlsx')
     sheet = wb['Анализ_БК+ББ']
     d = sheet[cell].value.date()
     d = str(d).split('-')[::-1]
@@ -45,25 +46,26 @@ def fill_xlsx(cell, letter):
     cell_vigruz = str(letter) + str(cell[1:])
     print(cell_vigruz)
     sheet[cell_vigruz] = value
-    wb.save("Приложение 1.xlsx")
+    wb.save("./first_table/Приложение 1.xlsx")
     wb.close()
 
 
-cells = generate_strings('N', 4, 41)
-for cell in cells:
-    fill_xlsx(cell, 'B')
-wb = openpyxl.load_workbook('Приложение 1.xlsx')
-sheet = wb['Анализ_БК+ББ']
-first_not_null = 4
-for i in range(first_not_null, 29):
-    if sheet[f'B{i}'].value != 0:
-        first_not_null = i
-        break
-if sheet['B4'].value == 0:
-    sheet['B4'].value = sheet[f'B{first_not_null}'].value
-for i in range(4, 29):
-    if sheet[f'B{i + 1}'].value == 0:
-        sheet[f'B{i + 1}'].value = sheet[f'B{i}'].value
-wb.save("Приложение 1.xlsx")
-wb.close()
-
+def test():
+    logging.info('parsing_brent_cost')
+    cells = generate_strings('N', 4, 41)
+    for cell in cells:
+        fill_xlsx(cell, 'B')
+    wb = openpyxl.load_workbook('./first_table/Приложение 1.xlsx')
+    sheet = wb['Анализ_БК+ББ']
+    first_not_null = 4
+    for i in range(first_not_null, 29):
+        if sheet[f'B{i}'].value != 0:
+            first_not_null = i
+            break
+    if sheet['B4'].value == 0:
+        sheet['B4'].value = sheet[f'B{first_not_null}'].value
+    for i in range(4, 29):
+        if sheet[f'B{i + 1}'].value == 0:
+            sheet[f'B{i + 1}'].value = sheet[f'B{i}'].value
+    wb.save("./first_table/Приложение 1.xlsx")
+    wb.close()
