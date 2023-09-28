@@ -25,3 +25,6 @@ PYTHONPATH:
   - .
 ignoreFiles:
   - .gitignore
+
+env:
+  EXCEL_FILE_PATH: "first_table/Приложение 1.xlsx"
