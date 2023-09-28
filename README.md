@@ -32,3 +32,12 @@ rcc task run --robot ./robot.yaml --task app_1_postprocessor
 ## Запуск дэшбордов
 
 Подробности для запуска дэшбордов в [этом репозитории](https://github.com/alexeynau/flutter-dashboard)
+
+EXCEL_FILE_PATH содержит путь к  файлу Excel.
+```
+import os
+
+excel_file_path = os.environ.get("EXCEL_FILE_PATH")
+# Теперь excel_file_path содержит путь к файлу "Приложение 1.xlsx"
+
+```
