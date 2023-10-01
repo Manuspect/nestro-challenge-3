@@ -44,6 +44,8 @@ def web_preprocessor():
     second_table.to_application_1(app1_file_path, app2_file_path)
 
 # TODO: implement in postprocessor
+
+
 def after_usd_kurs():
     #  Загрузите данные из quarterly_exchange_rate.xlsx
     quarterly_data = pd.read_excel('quarterly_exchange_rate.xlsx')
@@ -316,7 +318,8 @@ def after_update_postprocessor():
     conditions_revenues = []
     # for i in range(len(companys_names)):
     for i in range(1):
-        company_client = companys_clients[companys_index[i]: companys_index[i + 1]]
+        company_client = companys_clients[companys_index[i]
+            : companys_index[i + 1]]
 
         date_clients = app1_data[app1_data.columns[12]
                                  ].iloc[companys_index[i]: companys_index[i + 1]]
@@ -373,7 +376,10 @@ def after_update_postprocessor():
             columns_list = []
             for item in list(added_column.values())[company_row_index:]:
                 if month and (item is not None) and (item != '#DIV/0!'):
-                    columns_list.append(item.strftime('%B'))
+                    if isinstance(item, str):
+                        columns_list.append(item)
+                    else:
+                        columns_list.append(item.strftime('%B'))
                     continue
                 if (item is not None) and (item != '#DIV/0!'):
                     columns_list.append(item)
