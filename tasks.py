@@ -36,67 +36,16 @@ def web_preprocessor():
     from first_table import pars_usd, customs_duties_parser, parcing_first_table, parsing_brent_cost, urals_parser, second_table
     print("Start parser")
     logging.info("Start parser")
-    # pars_usd.usd_kurs()
-    # customs_duties_parser.start(app1_file_path)
-    # parcing_first_table.start(app1_file_path)
-    # parsing_brent_cost.start(app1_file_path)
-
+    pars_usd.usd_kurs()
+    customs_duties_parser.start(app1_file_path)
+    parcing_first_table.start(app1_file_path)
+    parsing_brent_cost.start(app1_file_path)
     urals_parser.start(app1_file_path)
-
     second_table.to_application_1(app1_file_path, app2_file_path)
 
-
-@task
-def after_update_postprocessor():
-    # Загрузите данные из monthly_exchange_rate.xlsx
-    monthly_data = pd.read_excel('monthly_exchange_rate.xlsx').T
-
-    months = {'январь': 1, 'февраль': 2, 'март': 3, 'апрель': 4, 'май': 5,
-              'июнь': 6, 'июль': 7, 'август': 8, 'сентябрь': 9, 'октябрь': 10,
-              'ноябрь': 11, 'декабрь': 12}
-
-    logging.info(monthly_data)
-
-    # Загрузите данные из Приложение_1.xlsx
-    app1_data = pd.read_excel(app1_file_path, header=[0, 1])
-    excel = Excel()
-    excel.open_workbook(app1_file_path)
-    excel.set_active_worksheet('Анализ_БК+ББ')
-    counter = 4
-    shipment_date = excel.get_cell_value(counter, 'L')
-    while excel.get_cell_value(counter, 'L') is not None:
-        shipment_date = excel.get_cell_value(counter, 'L')
-        reciving_date = excel.get_cell_value(counter, 'O')
-        excel.set_cell_value(counter, "Y", monthly_data[months[shipment_date.lower(
-        ).replace(" ", "")]].loc['Средний курс'])
-        excel.set_cell_value(counter, "Z", monthly_data[months[reciving_date.lower(
-        ).replace(" ", "")]].loc['Средний курс'])
-        counter += 1
-    excel.save_workbook(app1_file_path)
-
-    # Загрузите данные из цены_нефти.xlsx
-    oil_price_data = pd.read_excel('цены_нефти.xlsx')
-
-    # TODO: read price_data from 'Компания 1_факт_НДПИ (Platts)'
-    # oil_price_data = pd.read_excel(
-    #     app1_file_path, sheet_name='Компания 1_факт_НДПИ (Platts)')
-    # print(oil_price_data.iloc[10:14])
-
-    # Загрузите данные из Приложение_1.xlsx
-    app1_data = pd.read_excel(app1_file_path)
-
-    # Задайте столбцы, с которыми нужно сопоставить данные
-    columns_to_match = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь",
-                        "Ноябрь", "Декабрь"]
-
-    # Обновите данные в Приложение_1.xlsx
-    for column in columns_to_match:
-        app1_data[column] = oil_price_data[column]
-
-    # Сохраните обновленные данные в Приложение_1.xlsx
-    app1_data.to_excel(app1_file_path, index=False)
-
-    # Загрузите данные из quarterly_exchange_rate.xlsx
+# TODO: implement in postprocessor
+def after_usd_kurs():
+    #  Загрузите данные из quarterly_exchange_rate.xlsx
     quarterly_data = pd.read_excel('quarterly_exchange_rate.xlsx')
 
     # Загрузите данные из Приложение_1.xlsx
@@ -143,7 +92,7 @@ def is_numeric(val):
 
 
 @task
-def get_data_from_excel():
+def after_update_postprocessor():
     chats_data = {"data": [], "charts": defaultdict(list)}
     exchange_rate_df = pd.read_excel('monthly_exchange_rate.xlsx')
     exchange_rate_df['Месяц'] = exchange_rate_df['Месяц'].replace({1: 'Январь',
@@ -367,7 +316,7 @@ def get_data_from_excel():
     conditions_revenues = []
     # for i in range(len(companys_names)):
     for i in range(1):
-        company_client = companys_clients[companys_index[i]                                          : companys_index[i + 1]]
+        company_client = companys_clients[companys_index[i]: companys_index[i + 1]]
 
         date_clients = app1_data[app1_data.columns[12]
                                  ].iloc[companys_index[i]: companys_index[i + 1]]
