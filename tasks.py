@@ -1,8 +1,9 @@
 from bs4 import BeautifulSoup
 from RPA.Browser.Selenium import Selenium
 from RPA.Excel.Files import Files as Excel
+import openpyxl
 from robocorp.tasks import task
-from robocorp import workitems
+from RPA.Desktop.OperatingSystem import OperatingSystem
 from collections import defaultdict
 from selenium.webdriver.common.keys import Keys
 from openpyxl import Workbook
@@ -10,214 +11,43 @@ import pandas as pd
 import numpy as np
 import logging
 import os
-import time
-import re
 import json
+from dotenv import load_dotenv
 
-logging.basicConfig(level=logging.INFO)
+load_dotenv()
+
+try:
+    os.remove('parse_log.log')
+except OSError:
+    pass
+
+logging.basicConfig(filename='parse_log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
+                    encoding='utf-8')
 
 output_directory = os.environ.get("ROBOT_ARTIFACTS")
 shared_directory = os.path.join(output_directory, "shared")
+app1_file_path = os.environ.get("APP1_FILE_PATH")
+app2_file_path = os.environ.get("APP2_FILE_PATH")
+print("APP1_FILE_PATH", app1_file_path, "APP2_FILE_PATH", app2_file_path)
 
 
 @task
-def add_urals():
-    parser = Selenium()
-    urls = {
-        'декабрь 2021': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_31_yanvarya_2022_goda.html',
-        'январь': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_28_fevralya_2022_goda.html',
-        'февраль': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_31_marta_2022_goda.html',
-        'март': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_30_aprelya_2022_goda.html',
-        'апрель': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_31_maya_2022_goda.html',
-        'май': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_30_iyunya_2022_goda.html',
-        'июнь': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_31_iyulya_2022_goda.html',
-        'июль': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_31_avgusta_2022_goda.html',
-        'август': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_30_sentyabrya_2022_goda.html',
-        'сентябрь': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_31_oktyabrya_2022_goda.html',
-        'октябрь': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_30_noyabrya_2022_goda.html',
-        'ноябрь': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_31_dekabrya_2022_goda.html',
-        'декабрь': 'https://www.economy.gov.ru/material/directions/vneshneekonomicheskaya_deyatelnost/tamozhenno_tarifnoe_regulirovanie/o_vyvoznyh_tamozhennyh_poshlinah_na_neft_i_otdelnye_kategorii_tovarov_vyrabotannyh_iz_nefti_na_period_s_1_po_31_yanvarya_2023_goda.html'
-    }
-    payload = {}
-    urals_payload = {}
-    tax_rates = {}
-    keys = list(urls.keys())
-    for index, month in enumerate(keys):
-        parser.open_available_browser(urls[month])
-        if index != 0:
-            urals = parser.get_text("xpath=//table/tbody/tr[2]/td/p")
-            urals = urals.replace(',', '.')
-            urals_payload[month] = float(urals.split(' ')[0])
+def web_preprocessor():
+    from first_table import pars_usd, customs_duties_parser, parcing_first_table, parsing_brent_cost, urals_parser, second_table
+    print("Start parser")
+    logging.info("Start parser")
+    # pars_usd.usd_kurs()
+    # customs_duties_parser.start(app1_file_path)
+    # parcing_first_table.start(app1_file_path)
+    # parsing_brent_cost.start(app1_file_path)
 
-        if index != (len(urls) - 1):
-            tax_rate = parser.get_text("xpath=//table/tbody/tr/td[3]/p")
-            tax_rate = tax_rate.replace(',', '.')
-            tax_rates[keys[index + 1]] = float(tax_rate)
-        parser.close_browser()
-    payload = {
-        "urals_payload": urals_payload,
-        "tax_rates": tax_rates
-    }
-    # workitems.outputs.create(urals_payload)
-    with open(os.path.join(shared_directory, 'workitems.json'), "w") as outfile:
-        json.dump(payload, outfile)
-    logging.info(f'Словарь с ценой юралс по месяца заполнен')
+    urals_parser.start(app1_file_path)
+
+    second_table.to_application_1(app1_file_path, app2_file_path)
 
 
 @task
-def usd_kurs():
-    # Определите даты начала и конца
-    start_date = "01.01.2022"
-    end_date = "31.12.2022"
-
-    logging.basicConfig(filename='parse_log.log', level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s',
-                        encoding='utf-8')
-
-    try:
-        # Инициализируем Selenium
-        browser = Selenium()
-
-        # Создаем URL с параметрами дат
-        url = f"https://www.cbr.ru/currency_base/dynamics/?UniDbQuery.Posted=True&UniDbQuery.so=1&UniDbQuery.mode=1&UniDbQuery.date_req1={start_date}&UniDbQuery.date_req2={end_date}&UniDbQuery.VAL_NM_RQ=R01235"
-        browser.open_available_browser(url)
-        logging.info(f"Открыли сайт")
-        # Дождитесь полной загрузки страницы
-        browser.wait_until_element_is_visible(
-            "//*[@id='content']/div/div/div/div[2]/div[1]/table/tbody/tr[1]", 15)
-
-        # Создаем пустой список для хранения данных
-        data = []
-
-        # Создаем словарь для хранения кварталов
-        quarters = {1: [], 2: [], 3: [], 4: []}
-
-        # Итерируемся по дням от 239 до 1
-        for i in range(239, 0, -1):
-            # Получаем текст из ячейки таблицы
-            row = browser.get_text(
-                f'//*[@id="content"]/div/div/div/div[2]/div[1]/table/tbody/tr[{i}]')
-            date = row[:10]
-            rate = row[12:]
-            month = date[3:5]
-            logging.info(f"Текущий месяц: {month}")
-            rate = rate.replace(',', '.')
-            # Добавляем день и его курс в общий список
-            try:
-                data.append([date, float(rate)])
-
-                # Добавляем день в соответствующий квартал
-                day_number = int(date[:2])
-                if 1 <= day_number <= 31:
-                    quarters[1].append(float(rate))
-                elif 32 <= day_number <= 61:
-                    quarters[2].append(float(rate))
-                elif 62 <= day_number <= 92:
-                    quarters[3].append(float(rate))
-                elif 93 <= day_number <= 123:
-                    quarters[4].append(float(rate))
-            except ValueError:
-                logging.info(f"Not a float: {month}")
-
-        browser.close_browser()
-
-        # Создаем DataFrame из данных
-        df = pd.DataFrame(data, columns=["Дата", "Курс"])
-
-        # Добавляем столбец с месяцем
-        df['Месяц'] = df['Дата'].str[3:5]
-
-        # Считаем средний курс по месяцам
-        monthly_avg = df.groupby('Месяц')['Курс'].mean().reset_index()
-        monthly_avg.columns = ["Месяц", "Средний курс"]
-
-        # Считаем средний курс по кварталам
-        quarterly_avg = {}
-        for quarter, days in quarters.items():
-            if days:
-                avg_rate = sum(days) / len(days)
-                quarterly_avg[f"Квартал {quarter}"] = [avg_rate]
-
-        quarterly_avg_df = pd.DataFrame.from_dict(
-            quarterly_avg, orient='index', columns=["Средний курс"])
-
-        # Сохраняем результаты в Excel файлы
-        monthly_avg.to_excel("monthly_exchange_rate.xlsx", index=False)
-        quarterly_avg_df.to_excel("quarterly_exchange_rate.xlsx")
-
-    except Exception as e:
-        print(f"Произошла ошибка: {str(e)}")
-        logging.error(f"Произошла ошибка: {str(e)}")
-    finally:
-        # Закрываем браузер после использования
-        browser.close_browser()
-
-
-@task
-def parse_chrome():
-    # Создаем экземпляр браузера Selenium
-    browser = Selenium()
-    months = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль',
-              'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь']
-    months_dict = {}
-    for month in months:
-        params_chrome = f"2022 {month}"
-        try:
-            # Открываем Google и вводим запрос
-            browser.open_available_browser("https://www.google.com")
-            browser.input_text("name=q", f"цена нефти urals {params_chrome}")
-            browser.press_keys("name=q", Keys.ENTER)
-
-            browser.wait_until_element_is_visible("//*[@alt='Google']", 15)
-
-            # Ждем, пока страница загрузится
-            page_source = browser.get_source()
-
-            # Используем BeautifulSoup для парсинга страницы
-            soup = BeautifulSoup(page_source, "html.parser")
-
-            # Находим элемент с классами HwtpBd gsrt PZPZlf kTOYnf
-            result_element = soup.find(
-                "div", class_="HwtpBd gsrt PZPZlf kTOYnf")
-
-            # Внутри этого элемента находим элемент с классом IZ6rdc (цена)
-            price_element = result_element.find("div", class_="IZ6rdc")
-
-            # Получаем текст из элемента с ценой и выводим его
-            price = price_element.get_text()
-            logging.info(f"Цена нефти Urals за сентябрь 2022 года: {price}")
-        finally:
-            browser.close_browser()
-
-        # Создаем новый файл Excel
-        wb = Workbook()
-
-        # Активируем лист
-        sheet = wb.active
-
-        # Добавляем заголовки для колонок
-        sheet.append(["Год Месяц", "Цена"])
-
-        # Сохраняем новый файл Excel
-        wb.save("цены_нефти.xlsx")
-
-        current_date = params_chrome
-
-        # Разделяем текущую дату на месяц и год
-        date = params_chrome
-
-        # Добавляем запись в таблицу Excel
-        row = [date, price]
-        sheet.append(row)
-
-        # Сохраняем изменения
-        wb.save("цены_нефти.xlsx")
-
-        # Закрываем браузер после использования
-
-
-@task
-def pars_exel():
+def after_update_postprocessor():
     # Загрузите данные из monthly_exchange_rate.xlsx
     monthly_data = pd.read_excel('monthly_exchange_rate.xlsx').T
 
@@ -228,9 +58,9 @@ def pars_exel():
     logging.info(monthly_data)
 
     # Загрузите данные из Приложение_1.xlsx
-    app1_data = pd.read_excel('Приложение 1.xlsx', header=[0, 1])
+    app1_data = pd.read_excel(app1_file_path, header=[0, 1])
     excel = Excel()
-    excel.open_workbook('Приложение 1.xlsx')
+    excel.open_workbook(app1_file_path)
     excel.set_active_worksheet('Анализ_БК+ББ')
     counter = 4
     shipment_date = excel.get_cell_value(counter, 'L')
@@ -242,13 +72,18 @@ def pars_exel():
         excel.set_cell_value(counter, "Z", monthly_data[months[reciving_date.lower(
         ).replace(" ", "")]].loc['Средний курс'])
         counter += 1
-    excel.save_workbook('./result.xlsx')
+    excel.save_workbook(app1_file_path)
 
     # Загрузите данные из цены_нефти.xlsx
     oil_price_data = pd.read_excel('цены_нефти.xlsx')
 
+    # TODO: read price_data from 'Компания 1_факт_НДПИ (Platts)'
+    # oil_price_data = pd.read_excel(
+    #     app1_file_path, sheet_name='Компания 1_факт_НДПИ (Platts)')
+    # print(oil_price_data.iloc[10:14])
+
     # Загрузите данные из Приложение_1.xlsx
-    app1_data = pd.read_excel('Приложение_1.xlsx')
+    app1_data = pd.read_excel(app1_file_path)
 
     # Задайте столбцы, с которыми нужно сопоставить данные
     columns_to_match = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь",
@@ -259,13 +94,13 @@ def pars_exel():
         app1_data[column] = oil_price_data[column]
 
     # Сохраните обновленные данные в Приложение_1.xlsx
-    app1_data.to_excel('Приложение_1.xlsx', index=False)
+    app1_data.to_excel(app1_file_path, index=False)
 
     # Загрузите данные из quarterly_exchange_rate.xlsx
     quarterly_data = pd.read_excel('quarterly_exchange_rate.xlsx')
 
     # Загрузите данные из Приложение_1.xlsx
-    app1_data = pd.read_excel('Приложение_1.xlsx')
+    app1_data = pd.read_excel(app1_file_path)
 
     # Задайте столбцы кварталов, с которыми нужно сопоставить данные
     quarters_to_match = ["1 кв", "2 кв", "3 кв", "4 кв"]
@@ -275,7 +110,7 @@ def pars_exel():
         app1_data[quarter] = quarterly_data["Средний курс"]
 
     # Сохраните обновленные данные в Приложение_1.xlsx
-    app1_data.to_excel('Приложение_1.xlsx', index=False)
+    app1_data.to_excel(app1_file_path, index=False)
 
 
 def add_to_json(df, title, plot_type, chats_data):
@@ -308,7 +143,7 @@ def is_numeric(val):
 
 
 @task
-def get_data_from_excle():
+def get_data_from_excel():
     chats_data = {"data": [], "charts": defaultdict(list)}
     exchange_rate_df = pd.read_excel('monthly_exchange_rate.xlsx')
     exchange_rate_df['Месяц'] = exchange_rate_df['Месяц'].replace({1: 'Январь',
@@ -329,7 +164,7 @@ def get_data_from_excle():
         exchange_rate_df, "Курс доллара по месяцам", "plots", chats_data=chats_data)
 
     excel = Excel()
-    excel.open_workbook('Приложение 1.xlsx', data_only=True)
+    excel.open_workbook(app1_file_path, data_only=True)
     excel.set_active_worksheet('Анализ_БК+ББ')
 
     freight_usd = []
@@ -388,7 +223,7 @@ def get_data_from_excle():
     spread_df = spread_df.groupby('Дата spread', as_index=False)[
         ['Spread $/барр.', 'Spread руб./т.']].mean()
     spread_df[['Spread $/барр.', 'Spread руб./т.']
-    ] = spread_df[['Spread $/барр.', 'Spread руб./т.']].apply(lambda x: round(x, 2))
+              ] = spread_df[['Spread $/барр.', 'Spread руб./т.']].apply(lambda x: round(x, 2))
     chats_data = add_to_json(
         spread_df, "Spread на дату отгрузки", "plots", chats_data=chats_data)
 
@@ -439,7 +274,8 @@ def get_data_from_excle():
     usd_after = []
 
     for item_before, item_after, item_diff, item_date_after, item_date, item_profit_usd, item_usd_before, item_usd_after in zip(
-            list(profit_before_col.values())[3:], list(profit_after_col.values())[3:], list(diff_col.values())[3:],
+            list(profit_before_col.values())[3:], list(
+                profit_after_col.values())[3:], list(diff_col.values())[3:],
             list(date_after_col.values())[3:], list(
                 date_column.values())[3:],
             list(profit_usd_col.values())[3:], list(usd_before_col.values())[3:], list(usd_after_col.values())[3:]):
@@ -510,12 +346,12 @@ def get_data_from_excle():
     chats_data["charts"]['plots'].append(plot)
 
     excel = Excel()
-    excel.open_workbook('Приложение 1.xlsx', data_only=True)
+    excel.open_workbook(app1_file_path, data_only=True)
     excel.set_active_worksheet('Анализ_БК+ББ')
     rows = excel.read_worksheet_as_table()
 
     app1_data = pd.read_excel(
-        'Приложение 1.xlsx', sheet_name='Анализ_БК+ББ')
+        app1_file_path, sheet_name='Анализ_БК+ББ')
     # company_head = app1_data[]
 
     # Компании по которым мы анализизируем клиентов
@@ -531,10 +367,10 @@ def get_data_from_excle():
     conditions_revenues = []
     # for i in range(len(companys_names)):
     for i in range(1):
-        company_client = companys_clients[companys_index[i]: companys_index[i + 1]]
+        company_client = companys_clients[companys_index[i]                                          : companys_index[i + 1]]
 
         date_clients = app1_data[app1_data.columns[12]
-                       ].iloc[companys_index[i]: companys_index[i + 1]]
+                                 ].iloc[companys_index[i]: companys_index[i + 1]]
 
         company_rows = rows.get_slice(companys_index[i], companys_index[i + 1])
         fob = company_rows.get_column('BR').values()

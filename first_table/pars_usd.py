@@ -17,7 +17,7 @@ def usd_kurs():
         logging.info(f"Открыли сайт")
         # Дождитесь полной загрузки страницы
         browser.wait_until_element_is_visible(
-            "//*[@id='content']/div/div/div/div[2]/div[1]/table/tbody/tr[1]", 15)
+            "//*[@id='content']/div/div/div/div[2]/div[1]/table/tbody/tr[1]", 30)
 
         # Создаем пустой список для хранения данных
         data = []

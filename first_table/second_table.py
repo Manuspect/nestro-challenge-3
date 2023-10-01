@@ -2,9 +2,9 @@ from robocorp.tasks import task
 from RPA.Excel.Files import Files as Excel
 
 
-def to_application_1():
+def to_application_1(app1_file_path: str, app2_file_path: str):
     excel = Excel()
-    excel.open_workbook('./first_table/Приложение 1.xlsx', data_only=True)
+    excel.open_workbook(app1_file_path, data_only=True)
     excel.set_active_worksheet('Анализ_БК+ББ')
     oil_brand = excel.get_cell_value(1, "AB")
     rows = excel.read_worksheet_as_table()
@@ -17,7 +17,7 @@ def to_application_1():
             break
         months.append(month)
     months = [month_dict[month.month] for month in months]
-    excel.open_workbook('./first_table/Приложение 2.xlsx', data_only=True)
+    excel.open_workbook(app2_file_path, data_only=True)
     excel.set_active_worksheet('2023')
     rows = excel.read_worksheet_as_table()
     key_column = None
@@ -35,7 +35,7 @@ def to_application_1():
         if price is None:
             break
         oil_price.append(price)
-    excel.open_workbook('./first_table/Приложение 1.xlsx', data_only=True)
+    excel.open_workbook(app1_file_path, data_only=True)
     excel.set_active_worksheet('Анализ_БК+ББ')
     oil_price = {month_dict[index+1]: value for index,
                  value in enumerate(oil_price)}
@@ -43,5 +43,5 @@ def to_application_1():
     # print(result_oil_price)
     for index, elem in enumerate(result_oil_price):
         excel.set_cell_value(4+index, 'AB', elem)
-    excel.save_workbook('./first_table/Приложение 1.xlsx')
+    excel.save_workbook(app1_file_path)
     excel.close_workbook()
