@@ -1,44 +1,46 @@
 from bs4 import BeautifulSoup as bs
 from urllib.request import Request, urlopen
-import numpy as np
-import pandas as pd
 import openpyxl
 import logging
 
 
+def get_prices_for_month(month):
+    url = f"https://www.economy.gov.ru/material/departments/d12/konyunktura_mirovyh_tovarnyh_rynkov/o_sredney_cene_na_neft_sorta_yurals_za_{month}_2022_goda.html"
+    req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    web_byte = urlopen(req).read()
+    webpage = web_byte.decode('utf-8')
+    soup = bs(webpage, "html.parser")
+    price_text = [x.text for x in soup.findAll('p') if "США за баррель" in x.text]
+    if price_text:
+        return float(price_text[0].split()[0].replace(",", "."))
+    return None
+
+
 def start(file_path: str):
     logging.info('urals_parser')
-    url = ["https://www.economy.gov.ru/material/departments/d12/konyunktura_mirovyh_tovarnyh_rynkov/o_sredney_cene_na_neft_sorta_yurals_za_", "_2022_goda", ".html"]
     months = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul',
               'avgust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr']
 
     prices = []
 
-    for i, month in enumerate(months):
-        print(month)
-        if i == 0:
-            url_link = url[0]+month+url[1]+'_'+url[2]
-        else:
-            url_link = url[0]+month+url[1]+url[2]
-        print(url_link)
-        req = Request(url_link, headers={'User-Agent': 'Mozilla/5.0'})
-        web_byte = urlopen(req).read()
-
-        webpage = web_byte.decode('utf-8')
-        soup = bs(webpage, "html.parser")
-        prices.append(float([x for x in soup.findAll(
-            'p') if "США за баррель" in x.text][0].text.split()[0].replace(",", ".")))
+    for month in months:
+        price = get_prices_for_month(month)
+        if price is not None:
+            prices.append(price)
 
     wb = openpyxl.load_workbook(file_path)
     sheet = wb['Компания 1_факт_НДПИ (Platts)']
 
-    print(prices)
+    for i, price in enumerate(prices):
+        col_letter = chr(ord('B') + i)  # Преобразование индекса в букву столбца
+        start_cell = f"{col_letter}14"
+        end_cell = f"{col_letter}171"
 
-    for i in range(len(prices)):
-        # sheet[] = quotes[i]
-        print(f"{chr(67+i)}{14}", f"{chr(67+i)}{171}")
-        sheet[f"{chr(67+i)}{14}"].value = prices[i]
-        sheet[f"{chr(67+i)}{171}"].value = prices[i]
+        print(f"Setting value {price} in cells {start_cell} to {end_cell}")
+
+        sheet[start_cell].value = price
+        sheet[end_cell].value = price
 
     wb.save(file_path)
     wb.close()
+
