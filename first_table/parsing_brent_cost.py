@@ -11,10 +11,7 @@ brent_oil_data = {}
 
 
 def generate_strings(letter, num_1, num_2):
-    s = list([])
-    for i in range(num_1, num_2 + 1):
-        s.append(str(letter) + str(i))
-    return s
+    print([f'{letter}{i}' for i in range(num_1, num_2 + 1)])
 
 
 def fill_xlsx(file_path, cell, letter):
