@@ -1,9 +1,10 @@
-from robocorp.tasks import task
 from RPA.Excel.Files import Files as Excel
 
 
 def to_application_1(app1_file_path: str, app2_file_path: str):
+
     excel = Excel()
+
     excel.open_workbook(app1_file_path, data_only=True)
     excel.set_active_worksheet('Анализ_БК+ББ')
     oil_brand = excel.get_cell_value(1, "AB")
@@ -12,6 +13,7 @@ def to_application_1(app1_file_path: str, app2_file_path: str):
     months = []
     month_dict = {1: 'январь', 2: 'февраль', 3: 'март', 4: 'апрель', 5: 'май', 6: 'июнь',
                   7: 'июль', 8: 'август', 9: 'сентябрь', 10: 'октябрь', 11: 'ноябрь', 12: 'декабрь'}
+
     for month in list(months_col.values())[3:]:
         if month is None:
             break
@@ -30,7 +32,9 @@ def to_application_1(app1_file_path: str, app2_file_path: str):
     if key_column is None:
         raise "нет котировки нужного сорта"
     values = rows.get_column(key_column)
+
     oil_price = []
+
     for price in list(values.values())[4:]:
         if price is None:
             break
@@ -41,7 +45,9 @@ def to_application_1(app1_file_path: str, app2_file_path: str):
                  value in enumerate(oil_price)}
     result_oil_price = [oil_price[month] for month in months]
     # print(result_oil_price)
+
     for index, elem in enumerate(result_oil_price):
         excel.set_cell_value(4+index, 'AB', elem)
+
     excel.save_workbook(app1_file_path)
     excel.close_workbook()

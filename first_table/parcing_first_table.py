@@ -1,7 +1,5 @@
 from bs4 import BeautifulSoup as bs
-import urllib.request as urllib2
 from urllib.request import Request, urlopen
-from urllib.request import urlopen
 import numpy as np
 import pandas as pd
 import openpyxl

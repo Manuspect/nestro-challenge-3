@@ -1,7 +1,5 @@
 from bs4 import BeautifulSoup as bs
-import urllib.request as urllib2
 from urllib.request import Request, urlopen
-from urllib.request import urlopen
 import numpy as np
 import pandas as pd
 import openpyxl
@@ -10,12 +8,12 @@ import logging
 
 def start(file_path: str):
     logging.info('urals_parser')
-    # "https://www.economy.gov.ru/material/departments/d12/konyunktura_mirovyh_tovarnyh_rynkov/o_sredney_cene_na_neft_sorta_yurals_za_yanvar_2022_goda.html"
     url = ["https://www.economy.gov.ru/material/departments/d12/konyunktura_mirovyh_tovarnyh_rynkov/o_sredney_cene_na_neft_sorta_yurals_za_", "_2022_goda", ".html"]
-    # url = ["https://www.economy.gov.ru/material/departments/d12/konyunktura_mirovyh_tovarnyh_rynkov/o_sredney_cene_na_neft_sorta_yurals_za_yanvar_2022_goda_.html"]
     months = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul',
               'avgust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr']
+
     prices = []
+
     for i, month in enumerate(months):
         print(month)
         if i == 0:
@@ -35,10 +33,12 @@ def start(file_path: str):
     sheet = wb['Компания 1_факт_НДПИ (Platts)']
 
     print(prices)
+
     for i in range(len(prices)):
         # sheet[] = quotes[i]
         print(f"{chr(67+i)}{14}", f"{chr(67+i)}{171}")
         sheet[f"{chr(67+i)}{14}"].value = prices[i]
         sheet[f"{chr(67+i)}{171}"].value = prices[i]
+
     wb.save(file_path)
     wb.close()
