@@ -112,15 +112,29 @@ def after_usd_kurs():
 
 def add_to_json(df, title, plot_type, chats_data, hidden=None):
     data = []
-    for column in list(df.columns):
-        value = {
-            "name": column[1],
-            "series": list(df[column])
-        }
-        data.append(value)
+    all_names = [item['name'] for item in chats_data['data']]
+    
+    new_columns = []
+    for column in df.columns:
+        column_name = column[1]
+        if column_name in all_names:
+            count = len(list(df[column]))
+            column_name = f'{column_name}_{count}'
+        new_columns.append((column[0], column_name))
+
+    df.columns = pd.MultiIndex.from_tuples(new_columns)
+    
+    for column in df.columns:
+        if column[1] not in all_names:
+            value = {
+                "name": column[1],
+                "series": list(df[column])
+            }
+            data.append(value)
+    
     plot_name = {
         "plot_name": title,
-        "x": list(df['x'].columns)[0],
+        "x": list(df.xs('x', axis=1, level=0))[0],
         "y": list(df.xs('y', axis=1, level=0))
     }
     if hidden is not None:
@@ -225,7 +239,7 @@ def add_column_to_list(companies, merged_cells_values_start, merged_cells_values
                 continue
 
             if month and isinstance(item, str):
-                columns_list.append(item)
+                columns_list.append(item.lower().strip())
             elif month:
                 columns_list.append(item.strftime('%B'))
             elif date:
@@ -241,7 +255,7 @@ def add_column_to_list(companies, merged_cells_values_start, merged_cells_values
     return companies
 
 
-def get_processed_df(company, company_name, x: str, y: list, hidden: list = None, reverse: bool = False, agg_col=None):
+def get_processed_df(company, company_name, x: str, y: list, hidden: list = None, reverse: bool = False, agg_col=None, date=False):
     columns = [x] + y + (hidden if hidden is not None else [])
     min_length = min([len(company[item]) for item in columns])
     data = {('x', x): company[x][:min_length]}
@@ -261,9 +275,16 @@ def get_processed_df(company, company_name, x: str, y: list, hidden: list = None
     new_columns = pd.MultiIndex.from_tuples(
         [(col[0], f'{col[1]}_{company_name}') for col in df.columns])
     df.columns = new_columns
+    if date: 
+        name = f"{x}_{company_name}"
+        df[('x', name)] = pd.to_datetime(df[('x', name)])
+        df = df.sort_values(by=('x', name))
+        df[('x', name)] = df[('x', name)].dt.strftime('%Y-%m-%d')
+        
     if agg_col is not None:
         name = f"{agg_col}_{company_name}"
         df = df.groupby(('x', name), as_index=False).mean()
+        
     if reverse:
         df[('y', f"Эффект_{company_name}")] = df[(
             'y', f"Эффект_{company_name}")].apply(lambda x: None)
@@ -280,10 +301,10 @@ def get_processed_df(company, company_name, x: str, y: list, hidden: list = None
     return df
 
 
-def process_chart_to_json(companies, chats_data, x, y, title, plot_type, hidden=None, reverse=False, agg_col=None):
+def process_chart_to_json(companies, chats_data, x, y, title, plot_type, hidden=None, reverse=False, agg_col=None, date=False):
     for company in list(companies.keys())[:2]:
         df = get_processed_df(
-            companies[company], company, x, y, hidden, reverse, agg_col)
+            companies[company], company, x, y, hidden, reverse, agg_col, date)
         chats_data = add_to_json(
             df, f'{title}_{company}', plot_type, chats_data, hidden)
     return chats_data
@@ -369,13 +390,13 @@ def after_update_postprocessor():
         companies, merged_cells_values_start, merged_cells_values_end, rows, 'CS', "Сумма денежной выручки, млн руб.", month=False)
 
     charts = [{'x': 'Дата отгрузки', 'y': ['Freight,$/барр.', 'Freight ,млн руб.'], 'title': "Курс Freight по дате отгрузки",
-               'plot_type': 'plots', 'hidden': None, 'reverse': False, 'agg_col': None},
+               'plot_type': 'plots', 'hidden': None, 'reverse': False, 'agg_col': None, 'date': True},
               {'x': 'Дата отгрузки', 'y': ['Spread,$/барр.', 'Spread,млн руб.'], 'title': "Spread на дату отгрузки",
-               'plot_type': 'plots', 'hidden': None, 'reverse': False, 'agg_col': None},
+               'plot_type': 'plots', 'hidden': None, 'reverse': False, 'agg_col': None, 'date': True},
               {'x': 'Дата отгрузки', 'y': ['Цена Brent,$/барр.', 'Цена Brent,млн руб.'], 'title': "Brent на дату отгрузки",
-               'plot_type': 'plots', 'hidden': None, 'reverse': False, 'agg_col': None},
+               'plot_type': 'plots', 'hidden': None, 'reverse': False, 'agg_col': None, 'date': True},
               {'x': 'Условия поставок', 'y': ['Сумма денежной выручки, млн руб.'], 'title': "Средняя выручка по условиям договора",
-               'plot_type': 'bar_chart', 'hidden': None, 'reverse': False, 'agg_col': 'Условия поставок'},
+               'plot_type': 'bar_chart', 'hidden': None, 'reverse': False, 'agg_col': 'Условия поставок', 'date': False},
               {'x': 'Допдоход к рынку (к цене НДПИ Platts) млн руб', 'y': ['Допдоход к рынку (к цене НДПИ Argus) млн руб',
                                                                            'Зачисление процентов,млн руб',
                                                                            'Макропараметры (brent/ discount/ escalation) млн руб.',
@@ -389,15 +410,15 @@ def after_update_postprocessor():
                                                                            'откл НДПИ (Argus) и НДПИ (Plats Urals Med), млн руб.',
                                                                            'Эффект'],
                'title': "Отклонения в макропараметрах",
-               'plot_type': 'waterfall', 'hidden': None, 'reverse': True, 'agg_col': None},
+               'plot_type': 'waterfall', 'hidden': None, 'reverse': True, 'agg_col': None, 'date': False},
               {'x': 'Месяц отгрузки', 'y': ['Коэффициент перевода барр./т.'], 'title': "Коэффициент перевода барр./т. в месяц отгрузки",
-               'plot_type': 'bar_chart', 'hidden': None, 'reverse': False, 'agg_col': None},
+               'plot_type': 'bar_chart', 'hidden': None, 'reverse': False, 'agg_col': 'Месяц отгрузки', 'date': False},
               {'x': 'Месяц поступления выручки', 'y': ['Коэффициент перевода барр./т.'], 'title': "Коэффициент перевода барр./т. в месяц поступления выручки",
-               'plot_type': 'bar_chart', 'hidden': None, 'reverse': False, 'agg_col': None},
+               'plot_type': 'bar_chart', 'hidden': None, 'reverse': False, 'agg_col': 'Месяц поступления выручки', 'date': False},
               {'x': 'реализация,USD', 'y': ['реализация (отгрузка), рубли', 'поступление, рубли'], 'title': "Разница в итоговой прибыли при вариации сроков реализации этапов",
-               'plot_type': 'bar_chart', 'hidden': ['курс на дату отгрузки', 'Дата отгрузки', 'курс на дату поступления', 'Дата поступления выручки'], 'reverse': False, 'agg_col': None}]
+               'plot_type': 'bar_chart', 'hidden': ['курс на дату отгрузки', 'Дата отгрузки', 'курс на дату поступления', 'Дата поступления выручки'], 'reverse': False, 'agg_col': None, 'date': False}]
     for chart in charts:
         chats_data = process_chart_to_json(
-            companies, chats_data, chart['x'], chart['y'], chart['title'], chart['plot_type'], chart['hidden'], chart['reverse'], chart['agg_col'])
+            companies, chats_data, chart['x'], chart['y'], chart['title'], chart['plot_type'], chart['hidden'], chart['reverse'], chart['agg_col'], chart['date'])
     with open(os.path.join(shared_directory, 'workitems.json'), "w", encoding='utf-8') as outfile:
         json.dump(chats_data, outfile, ensure_ascii=False)
