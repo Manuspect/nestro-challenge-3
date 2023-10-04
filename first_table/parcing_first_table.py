@@ -21,7 +21,6 @@ def spread_quotes(url):
 
 
 def start(file_path: str):
-    from openpyxl.cell.cell import MergedCell
     logging.info('parcing_first_table')
     url = 'https://ru.investing.com/commodities/brent-wti-crude-spread-futures-historical-data'
     quotes = spread_quotes(url)
@@ -35,15 +34,21 @@ def start(file_path: str):
         cell = sheet[f"C{4+i}"]
         print(f"C{4+i}", cell.value, quotes[i])
         logging.info(f"C{4+i}, {cell.value}, {quotes[i]}")
-        if not isinstance(cell, MergedCell):
-            cell.value = quotes[i]
-            continue
-        for merged_cells_range in sheet.merged_cells.ranges:
-            if f"C{4+i}" in merged_cells_range:
-                print('merged cells range', merged_cells_range)
-                logging.info(f'merged cells range: {merged_cells_range}')
-                merged_cells_range.start_cell.value = quotes[i]
-                break
+        set_cell_value(f"C{4+i}", quotes[i], sheet)
 
     wb.save(file_path)
     wb.close()
+
+
+def set_cell_value(cell_key, new_value, sheet):
+    from openpyxl.cell.cell import MergedCell
+    cell = sheet[cell_key]
+    if not isinstance(cell, MergedCell):
+        cell.value = new_value
+        return
+    for merged_cells_range in sheet.merged_cells.ranges:
+        if cell_key in merged_cells_range:
+            print('merged cells range', merged_cells_range)
+            logging.info(f'merged cells range: {merged_cells_range}')
+            merged_cells_range.start_cell.value = new_value
+            break

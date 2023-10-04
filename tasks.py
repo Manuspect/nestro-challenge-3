@@ -1,3 +1,4 @@
+from datetime import datetime
 from bs4 import BeautifulSoup
 from RPA.Browser.Selenium import Selenium
 from RPA.Excel.Files import Files as Excel
@@ -37,13 +38,58 @@ def web_preprocessor():
     print("Start parser")
     logging.info("Start parser")
     pars_usd.usd_kurs()
+    pars_excel(app1_file_path)
+    urals_parser.start(app1_file_path)
     customs_duties_parser.start(app1_file_path)
     parcing_first_table.start(app1_file_path)
     parsing_brent_cost.start(app1_file_path)
-    urals_parser.start(app1_file_path)
     second_table.to_application_1(app1_file_path, app2_file_path)
 
 # TODO: implement in postprocessor
+
+
+def pars_excel(file_path):
+    from first_table.parcing_first_table import set_cell_value
+
+    # Загрузите данные из monthly_exchange_rate.xlsx
+    monthly_data = pd.read_excel('monthly_exchange_rate.xlsx').T
+
+    months = {'январь': 1, 'февраль': 2, 'март': 3, 'апрель': 4, 'май': 5,
+              'июнь': 6, 'июль': 7, 'август': 8, 'сентябрь': 9, 'октябрь': 10,
+              'ноябрь': 11, 'декабрь': 12}
+
+    logging.info(monthly_data)
+
+    # Загрузите данные из Приложение_1.xlsx
+    wb = openpyxl.load_workbook(file_path)
+    sheet = wb['Анализ_БК+ББ']
+    counter = 4
+    shipment_date = sheet[f"M{counter}"].value
+    reciving_date = sheet[f"P{counter}"].value
+    while shipment_date is not None:
+        logging.info(type(shipment_date))
+        if isinstance(shipment_date, datetime):
+            logging.info(f"shipment_date: {shipment_date.month}")
+            course = monthly_data[shipment_date.month].loc['Средний курс']
+        else:
+            course = monthly_data[months[shipment_date.lower(
+            ).replace(" ", "")]].loc['Средний курс']
+
+        logging.info(f"shipment_date course: {course}")
+        set_cell_value(f'Y{counter}', course, sheet)
+        if isinstance(reciving_date, datetime):
+            logging.info(f"reciving_date: {reciving_date.month}")
+            course = monthly_data[reciving_date.month].loc['Средний курс']
+        else:
+            course = monthly_data[months[reciving_date.lower(
+            ).replace(" ", "")]].loc['Средний курс']
+        logging.info(f"reciving_date course: {course}")
+        set_cell_value(f'Z{counter}', course, sheet)
+        counter += 1
+        shipment_date = sheet[f"M{counter}"].value
+        reciving_date = sheet[f"P{counter}"].value
+    wb.save(file_path)
+    wb.close()
 
 
 def after_usd_kurs():
@@ -318,8 +364,7 @@ def after_update_postprocessor():
     conditions_revenues = []
     # for i in range(len(companys_names)):
     for i in range(1):
-        company_client = companys_clients[companys_index[i]
-            : companys_index[i + 1]]
+        company_client = companys_clients[companys_index[i]                                          : companys_index[i + 1]]
 
         date_clients = app1_data[app1_data.columns[12]
                                  ].iloc[companys_index[i]: companys_index[i + 1]]
