@@ -11,7 +11,7 @@ brent_oil_data = {}
 
 
 def generate_strings(letter, num_1, num_2):
-    print([f'{letter}{i}' for i in range(num_1, num_2 + 1)])
+    return([f'{letter}{i}' for i in range(num_1, num_2 + 1)])
 
 
 def fill_xlsx(file_path, cell, letter):
@@ -71,6 +71,7 @@ def start(file_path: str):
 
     # TODO: get range of string according to count of clients
     cells = generate_strings('N', 4, 41)
+
     for cell in cells:
         print(f'Filling cell: {cell}')
         logging.info(f'Filling cell: {cell}')
